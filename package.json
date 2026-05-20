@@ -1,0 +1,13 @@
+{
+  "name": "cyc-language",
+  "version": "1.0.0",
+  "description": "",
+  "main": "main.js",
+  "keywords": [],
+  "author": "Oskar P - (GOAT)",
+  "license": "ISC",
+  "type": "module",
+  "bin": {
+    "cyc": "./main.js"
+  }
+}
