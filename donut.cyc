@@ -1,0 +1,91 @@
+=(A:num, 0);
+=(B:num, 0);
+
+print("\x1b[2J");
+
+define(W:num, 60);
+define(H:num, 22);
+define(N:num, *(W, H));
+
+define(z:list, list());
+define(k:num, 0);
+while(<(k, N),
+   do(z.add(0); set(k, +(k, 1)))
+);
+
+define(b:list, list());
+set(k, 0);
+while(<(k, N),
+   do(b.add(" "); set(k, +(k, 1)))
+);
+
+while(true,
+   do(
+      set(k, 0);
+      while(<(k, N),
+         do(z.set(0, k); b.set(" ", k); set(k, +(k, 1)))
+      );
+
+      define(j:num, 0);
+      while(<(j, 6.28),
+         do(
+            define(i:num, 0);
+            while(<(i, 6.28),
+               do(
+                  =(c, sin(i)); =(d, cos(j));
+                  =(e, sin(A)); =(f, sin(j));
+                  =(g, cos(A)); =(h, +(d, 2));
+                  =(D, /(1, +(+(+(c, *(h, e)), *(f, g)), 5)));
+                  =(l, cos(i)); =(m, cos(B)); =(n, sin(B));
+                  =(t, -(*(c, *(h, g)), *(f, e)));
+                  =(x, floor(+(30, *(20, *(D, -(*(l, *(h, m)), *(t, n)))))));
+                  =(y, floor(+(12, *(15, *(D, +(*(l, *(h, n)), *(t, m)))))));
+                  =(o, +(x, *(W, y)));
+                  =(Nv, floor(*(8, -(*( -(*(f, e), *(c, *(d, g))), m),
+                                    +(*(c, *(d, e)), +(*(f, g), *(l, *(d, n))))))));
+
+                  if(and(>(H, y), >(y, 0), >(x, 0), >(W, x)),
+                     if(>(D, z.get(o)),
+                        do(
+                           z.set(D, o);
+                           =(ch, ".");
+                           if(>(Nv, 0), set(ch, ","));
+                           if(>(Nv, 1), set(ch, "-"));
+                           if(>(Nv, 2), set(ch, "~"));
+                           if(>(Nv, 3), set(ch, ":"));
+                           if(>(Nv, 4), set(ch, ";"));
+                           if(>(Nv, 5), set(ch, "="));
+                           if(>(Nv, 6), set(ch, "!"));
+                           if(>(Nv, 7), set(ch, "*"));
+                           if(>(Nv, 8), set(ch, "#"));
+                           if(>(Nv, 9), set(ch, "$"));
+                           if(>(Nv, 10), set(ch, "@"));
+                           b.set(ch, o)
+                        )
+                     )
+                  );
+                  set(i, +(i, 0.07))
+               )
+            );
+            set(j, +(j, 0.2))
+         )
+      );
+
+      =(output, "\x1b[H");
+      =(col, 0);
+      set(k, 0);
+      while(<(k, N),
+         do(
+            if(==(col, 0), set(output, +(output, "\n")));
+            set(output, +(output, b.get(k)));
+            set(col, +(col, 1));
+            if(==(col, W), set(col, 0));
+            set(k, +(k, 1))
+         )
+      );
+      print(output);
+
+      set(A, +(A, 0.14));
+      set(B, +(B, 0.07))
+   )
+)
