@@ -156,11 +156,12 @@ SPECIAL_FORMS.define = (args, env, evaluate) => {
       }
       
    } 
-   if (typeof value !== "object" && args[0].valueType !== typeof value){
+   if (typeof value !== "object" && args[0].valueType !== typeof value && args[0].valueType !== "anything"){
       throw new SyntaxError(`Niezgodność typu dla zmiennej '${args[0].name}' typu '${args[0].valueType}' z wartością: ${value} typu '${typeof value}'`)
    }
    
    env[args[0].name] = value;
+   env[`__type_${args[0].name}`] = args[0].valueType;
    return value;
 };
 SPECIAL_FORMS.set = (args, env, evaluate) => {
@@ -177,15 +178,19 @@ SPECIAL_FORMS.set = (args, env, evaluate) => {
    }
 
    if (!targetEnv) throw new ReferenceError(`Zmienna '${varName}' nie jest zdefiniowana.`);
+
    let value = evaluate(args[1], env);
    let oldValue = targetEnv[varName];
+   let declaredType = targetEnv[`__type_${varName}`];
 
-   if (typeof value !== "object" && typeof oldValue !== typeof value) {
-      throw new SyntaxError(`Niezgodność typu dla zmiennej '${varName}' typu '${typeof oldValue}' z wartością: ${value} typu '${typeof value}'`);
-   } else if (typeof value === "object" && oldValue.type !== value.type) {
-      throw new SyntaxError(`Niezgodność typu dla obiektu '${varName}'`);
+   if (declaredType !== "anything") {
+      if (typeof value !== "object" && declaredType !== typeof value) {
+      throw new SyntaxError(`Niezgodność typu dla zmiennej '${varName}' typu '${declaredType}' z wartością: ${value} typu '${typeof value}'`);
+      } else if (typeof value === "object" && oldValue.type !== value.type) {
+         throw new SyntaxError(`Niezgodność typu dla obiektu '${varName}'`);
+      }
    }
-
+   
    targetEnv[varName] = value;
    return value;
 };
