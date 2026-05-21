@@ -51,9 +51,9 @@ const regression_tests = [
    { name: "Właściwość len (długość)", code: "=(l:list, list(1, 2, 3)); l.len", expected: 3 },
    
    // 7. METODY PRYMITYWÓW
-   { name: "Metoda stringa (upper)", code: "=(s:str, \"hej\"); s.upper()", expected: "HEJ" },
+   { name: "Metoda stringa (upper)", code: "=(s:str, \"hej\"); s.upper", expected: "HEJ" },
    { name: "Właściwość stringa (len)", code: "=(s:str, \"test\"); s.len", expected: 4 },
-   { name: "Metoda liczby (isEven)", code: "=(n:num, 4); n.isEven()", expected: true },
+   { name: "Metoda liczby (isEven)", code: "=(n:num, 4); n.isEven", expected: true },
 
    // 8. MODUŁY I IMPORT (Nowość!)
    { 

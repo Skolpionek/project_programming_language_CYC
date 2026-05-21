@@ -333,18 +333,45 @@ VARIABLES.false = false;
 //----------------------
 export const TYPE_METHODS = {
    string: {
-      upper: (val, args) => val.toUpperCase(),
-      lower: (val, args) => val.toLowerCase(),
-      repeat: (val, args) => val.repeat(args[0])
+      repeat: (val, args) => {
+         if(args.length !== 1) throw new SyntaxError("Metoda 'repeat' wymaga dokładnie 1 argumentu");
+         return val.repeat(args[0]);
+      },
+      replace: (val, args) => {
+         if(args.length !== 2) throw new SyntaxError("Metoda 'replace' wymaga 2 argumentów: replace(szukany, nowy)");
+         return val.replaceAll(args[0], args[1]);
+      },
+      contains: (val, args) => val.includes(args[0]),       
+      startsWith: (val, args) => val.startsWith(args[0]),   
+      endsWith: (val, args) => val.endsWith(args[0]),       
+      padStart: (val, args) => val.padStart(args[0], args[1] || " ") 
    },
    number: {
-      isEven: (val, args) => val % 2 === 0,
-      isOdd: (val, args) => val % 2 !== 0
    }
 };
 
 export const TYPE_PROPERTIES = {
    string: {
-      len: (val) => val.length
+      lower: (val, args) => val.toLowerCase(),
+      upper: (val, args) => val.toUpperCase(),
+      len: (val) => val.length,
+      trim: (val) => val.trim(),            
+      isEmpty: (val) => val.length === 0,
+      reverse: (val) => val.split('').reverse().join(''),
+      capitalize: (val) => val.charAt(0).toUpperCase() + val.slice(1).toLowerCase()
+   },
+   number: {
+      isEven: (val) => val % 2 === 0,
+      isOdd: (val) => val % 2 !== 0,
+      sNotation: (val) => val.toExponential().replace(/e\+?/, ' * 10^'),
+      bin: (val) => val.toString(2),
+      oct: (val) => val.toString(8),
+      hex: (val) => val.toString(16),
+      abs: (val) => Math.abs(val),       
+      round: (val) => Math.round(val),   
+      floor: (val) => Math.floor(val),   
+      ceil: (val) => Math.ceil(val),     
+      sign: (val) => Math.sign(val),     
+      isInt: (val) => Number.isInteger(val) 
    }
 };
