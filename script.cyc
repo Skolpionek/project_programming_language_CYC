@@ -1,3 +1,2 @@
-print(penis);
-print(67);
-print(penis);
+=(x:bool,true);
+print(x)

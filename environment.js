@@ -14,7 +14,7 @@ export const FUNCTIONS = Object.create(null);
 
 
 FUNCTIONS.print = (args) => {
-   
+
    const formatOutput = (arg) => {
       if (arg && arg.type === "list") {
          let inner = arg.value.map(v => formatOutput(v)).join(" ");
@@ -23,11 +23,17 @@ FUNCTIONS.print = (args) => {
       return ((arg == 67) ? "SIX SEVEN!!!! SIX SEVEN!!! SIX SEVEN!!" : arg);
    };
    args = args.map(arg => formatOutput(arg));
-   
+
    let output = args.join("");
-   console.log(output);
-   return output; 
+   process.stdout.write(output);
+   return output;
 };
+
+FUNCTIONS.sin = (args) => Math.sin(args[0]);
+FUNCTIONS.cos = (args) => Math.cos(args[0]);
+FUNCTIONS.floor = (args) => Math.floor(args[0]);
+FUNCTIONS.clear = () => console.clear();
+
 
 //----------------------
 //STRUKTURY DANYCH
@@ -39,21 +45,25 @@ FUNCTIONS.list = (args) => {
    obj.type = "list";
    obj.value = args; 
    
-   obj.add = (newArgs) => {
-      obj.value.push(...newArgs);
+   obj.add = (args) => {
+      obj.value.push(...args);
       return obj.value;  
    };
    
-   obj.del = (amount=1) => {
+   obj.del = (args) => {
+      let amount = args[0] || 1;
       for(let i=0;i<amount;i++)
          obj.value.pop(); 
       return obj.value;
    };
-   obj.get = (index) => {
+   obj.get = (args) => {
+      let index = args[0];
       if (index >= obj.len) throw new SyntaxError("Index wykracza poza granice listy");
       return obj.value[index];
    }
-   obj.set = (value, index) => {
+   obj.set = (args) => {
+      let value = args[0];
+      let index = args[1];
       if (index >= obj.len) throw new SyntaxError("Index wykracza poza granice listy");
       obj.value[index] = value;
       return obj.value[index];
@@ -146,22 +156,25 @@ SPECIAL_FORMS.define = (args, env, evaluate) => {
    if (args.length !== 2 || args[0].type !== "word") {
       throw new SyntaxError("Niepoprawne przypisanie wartosci. Poprawne: =(nazwa, wartość)");
    }
+   
    let value = evaluate(args[1], env);
-   if (!args[0].valueType) {
-      if(typeof value === "object"){
-         args[0].valueType = value.type;
-
+   let inferredType = args[0].valueType;
+   if (!inferredType) {
+      if (typeof value === "object") {
+         inferredType = value.type;
       } else {
-         args[0].valueType = typeof value
+         inferredType = typeof value;
       }
-      
    } 
-   if (typeof value !== "object" && args[0].valueType !== typeof value && args[0].valueType !== "anything"){
-      throw new SyntaxError(`Niezgodność typu dla zmiennej '${args[0].name}' typu '${args[0].valueType}' z wartością: ${value} typu '${typeof value}'`)
+   if (args[0].valueType && args[0].valueType !== "anything") {
+      if (typeof value !== "object" && args[0].valueType !== typeof value) {
+         throw new SyntaxError(`Niezgodność typu dla zmiennej '${args[0].name}'. Oczekiwano '${args[0].valueType}', otrzymano '${typeof value}'`);
+      }
    }
    
    env[args[0].name] = value;
-   env[`__type_${args[0].name}`] = args[0].valueType;
+   env[`__type_${args[0].name}`] = inferredType;
+   
    return value;
 };
 SPECIAL_FORMS.set = (args, env, evaluate) => {

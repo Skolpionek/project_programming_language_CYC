@@ -16,8 +16,8 @@ function parseExpression(program) {
    let match, expr;
    
    if (match = /^"([^"]*)"/.exec(program)) {
-      expr = {type: "value", value: match[1]};
-   } else if (match = /^\d+\b/.exec(program)) {
+      expr = {type: "value", value: match[1].replace(/\\n/g, '\n').replace(/\\t/g, '\t').replace(/\\r/g, '\r').replace(/\\x1b/g, '\x1b')};
+   } else if (match = /^\d+(\.\d+)?\b/.exec(program)) {
       expr = {type: "value", value: Number(match[0])};
       
    } else if (match = /^([^\s(),#":]+)(?::([a-zA-Z0-9_]+))?/.exec(program)) {
