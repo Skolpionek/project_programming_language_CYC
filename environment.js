@@ -18,6 +18,9 @@ FUNCTIONS.print = (args) => {
          let inner = arg.value.map(v => formatOutput(v)).join(" ");
          return `(${inner})`;
       }
+      if (typeof arg === "function") {
+         return "<function>";
+      }
       return ((arg == 67) ? "SIX SEVEN!!!! SIX SEVEN!!! SIX SEVEN!!" : arg);
    };
    
@@ -86,13 +89,14 @@ FUNCTIONS.list = (args) => {
 //----------------------
 
 FUNCTIONS["+"] = (args) => args.slice(1).reduce((acc, curr) => {
+   if (typeof acc !== "number" && typeof acc !== "string") {
+      throw new TypeMismatchError(`Invalid type: the addition operator does not support type '${acc.type ? acc.type : typeof acc}'`);
+   }
    if (typeof acc !== typeof curr) {
-      throw new TypeMismatchError(`Type mismatch: attempt to add '${typeof curr}' to '${typeof acc}'`);
+      throw new TypeMismatchError(`Type mismatch: attempt to add '${curr.type ? curr.type : typeof curr}' to '${acc.type ? acc.type : typeof acc}'`);
    }
    
-   if (typeof acc !== "number" && typeof acc !== "string") {
-      throw new TypeMismatchError(`Invalid type: the addition operator does not support type '${typeof acc}'`);
-   }
+   
    
    return acc + curr;
 }, args[0]);
@@ -150,13 +154,11 @@ comparisonOperators.forEach(operator => {
 //----------------------
 
 export const SPECIAL_FORMS = Object.create(null);
-
-// Logical Operators (Short-Circuiting)
 SPECIAL_FORMS.or = (args, env, evaluate) => {
    for (let arg of args) {
       let value = evaluate(arg, env);
       if (value === true) {
-         return true; // Found true! Short-circuit and return immediately
+         return true; 
       }
    }
    return false;
@@ -166,7 +168,7 @@ SPECIAL_FORMS.and = (args, env, evaluate) => {
    for (let arg of args) {
       let value = evaluate(arg, env);
       if (value === false) {
-         return false; // Found false! Short-circuit and return immediately
+         return false; 
       }
    }
    return true;
@@ -192,7 +194,6 @@ SPECIAL_FORMS.define = (args, env, evaluate) => {
    if (args.length !== 2 || args[0].type !== "word") {
       throw new SyntaxError("Invalid assignment. Expected: =(name, value)");
    }
-   
    let value = evaluate(args[1], env);
    let inferredType = args[0].valueType;
    
@@ -209,6 +210,8 @@ SPECIAL_FORMS.define = (args, env, evaluate) => {
          throw new TypeMismatchError(`Type mismatch for variable '${args[0].name}'. Expected '${args[0].valueType}', got '${typeof value}'`);
       }
    }
+   delete args[0].valueType;
+  
    
    env[args[0].name] = value;
    env[`__type_${args[0].name}`] = inferredType;
@@ -250,10 +253,12 @@ SPECIAL_FORMS.set = (args, env, evaluate) => {
 };
 
 SPECIAL_FORMS["="] = (args, env, evaluate) => {
+   
    if (args[0].valueType) {
+      console.log(args[0])
       return SPECIAL_FORMS.define(args, env, evaluate);
    }
-   if (Object.prototype.hasOwnProperty.call(env, args[0].name)) {
+   if (args[0].name in env) {
       return SPECIAL_FORMS.set(args, env, evaluate);
    } else {
       return SPECIAL_FORMS.define(args, env, evaluate);

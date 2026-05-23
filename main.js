@@ -229,7 +229,6 @@ function runCLI() {
    let filename = args[0];
    
    try {
-      // NOWOŚĆ: Zabezpieczenie przed brakiem pliku
       if (!fs.existsSync(filename)) {
          throw new Error(`File not found: '${filename}'`);
       }

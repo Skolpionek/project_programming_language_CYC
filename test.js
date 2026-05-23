@@ -66,7 +66,7 @@ const regression_tests = [
    { name: "Chained greater than (True)", code: ">(100, 50, 0, -10)", expected: true },
    { name: "Chained greater than (False)", code: ">(100, 50, 60, -10)", expected: false },
    { name: "Chained less than or equal (True)", code: "<=(5, 5, 10, 10)", expected: true },
-   { name: "Chained greater than or equal (True)", code: ">(10, 10, 5, -1)", expected: true },
+   { name: "Chained greater than or equal (True)", code: ">=(10, 10, 5, -1)", expected: true },
    { name: "Chained equality multiple matches (True)", code: "==(42, 42, 42, 42)", expected: true },
    { name: "Chained equality mismatch (False)", code: "==(42, 42, 99, 42)", expected: false },
    { name: "Chained inequality (True)", code: "!=(1, 2, 3, 4)", expected: true },
