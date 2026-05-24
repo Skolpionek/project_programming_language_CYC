@@ -6,7 +6,7 @@ import { FUNCTIONS, SPECIAL_FORMS, VARIABLES, TYPE_METHODS, TYPE_PROPERTIES } fr
 // ==========================================
 // CUSTOM ERRORS
 // ==========================================
-class SyntaxError extends Error {
+export class SyntaxError extends Error {
    constructor(message) {
       super(message);
       this.name = "SyntaxError";
@@ -24,6 +24,12 @@ export class DivisionByZeroError extends Error {
    constructor(message) {
       super(message);
       this.name = "DivisionByZeroError";
+   }
+}
+export class ValueError extends Error {
+   constructor(message) {
+       super(message);
+       this.name = "ValueError";
    }
 }
 

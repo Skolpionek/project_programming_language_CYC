@@ -4,7 +4,7 @@
 
 import fs from 'fs';
 // We import the custom errors you defined and exported in main.js
-import { TypeMismatchError, DivisionByZeroError } from './main.js';
+import { TypeMismatchError, DivisionByZeroError, SyntaxError, ValueError} from './main.js';
 import readlineSync from 'readline-sync';
 //----------------------
 // FUNCTIONS
@@ -39,6 +39,54 @@ FUNCTIONS.sin = (args) => Math.sin(args[0]);
 FUNCTIONS.cos = (args) => Math.cos(args[0]);
 FUNCTIONS.floor = (args) => Math.floor(args[0]);
 FUNCTIONS.clear = () => console.clear();
+
+FUNCTIONS.num = (args) => {
+   if (args.length !== 1) {
+      throw new SyntaxError("Function 'num' requires exactly 1 argument");
+   }
+   let arg = args[0];
+   let typeName = arg && arg.type ? arg.type : typeof arg;
+   if (typeName !== "string" && typeName !== "number") {
+      throw new TypeMismatchError(`Type mismatch: cannot convert type '${typeName}' to 'number'`);
+   }
+
+   if (typeName === "number") return arg;
+
+   let parsed = Number(arg);
+   if (Number.isNaN(parsed) || arg === "") {
+      throw new ValueError(`Value error: cannot parse "${arg}" into a valid number`);
+   }
+   return parsed;
+};
+FUNCTIONS.str = (args) => {
+   if (args.length !== 1) {
+      throw new SyntaxError("Function 'str' requires exactly 1 argument");
+   }
+
+   let arg = args[0];
+   let typeName = arg && arg.type ? arg.type : typeof arg;
+
+   if (typeName === "number" || typeName === "boolean" || typeName === "string") {
+      return String(arg); 
+   }
+   throw new TypeMismatchError(`Type mismatch: cannot convert type '${typeName}' to 'string'`);
+}
+function isTruthy(val) {
+   if (typeof val === "boolean") return val;
+   if (typeof val === "number") return val !== 0;
+   if (typeof val === "string") return val !== "";
+   if (val && val.type === "list") return val.value.length > 0;
+   if (typeof val === "function") return true;
+   if (val === undefined || val === null) return false;
+   
+   return true;
+}
+FUNCTIONS.bool = (args) => {
+   if (args.length !== 1) {
+      throw new SyntaxError("Function 'bool' requires exactly 1 argument");
+   }
+   return isTruthy(args[0]);
+};
 
 //----------------------
 // DATA STRUCTURES
@@ -292,7 +340,7 @@ SPECIAL_FORMS["++"] = (args, env, evaluate, parse, step = 1) => {
 SPECIAL_FORMS["--"] = (args, env, evaluate, parse) => SPECIAL_FORMS["++"](args, env, evaluate, parse, -1);
 
 SPECIAL_FORMS.if = (args, env, evaluate) => {
-   let condition = evaluate(args[0], env);
+   let condition = isTruthy(evaluate(args[0], env));
    if(args.length === 3){
       if (condition !== false && condition !== 0 && condition !== "") {
          return evaluate(args[1], env);
@@ -316,7 +364,7 @@ SPECIAL_FORMS.while = (args, env, evaluate, parse) => {
    if (args.length !== 2) {
       throw new SyntaxError("Invalid 'while' usage. Expected: while(condition, body)");
    }
-   while (evaluate(args[0], env) !== false) {
+   while (isTruthy(evaluate(args[0], env)) !== false) {
       evaluate(args[1], env);
    }
    return false;

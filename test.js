@@ -11,7 +11,7 @@ fs.writeFileSync(testModuleName, testModuleContent);
 
 const regression_tests = [
    // ==========================================
-   // 1. MATHEMATICS (Basics and Edge Cases)
+   // 1. MATHEMATICS
    // ==========================================
 // --- ADDITION (+) ---
    { name: "Adding multiple arguments", code: "+(1, 2, 3, 4, 5)", expected: 15 },
@@ -239,7 +239,6 @@ const regression_tests = [
    { name: "Number radix conversion (hex)", code: "=(n:num, 255); n.hex", expected: "ff" },
    { name: "Number scientific notation string parsing", code: "=(n:num, 5000); n.sNotation", expected: "5 * 10^3" },
    { name: "Chaining arithmetic properties sequentially", code: "=(n:num, -5.5); n.abs.floor", expected: 5 },
-
    // --- PRIMITIVE ERRORS ---
    { name: "Invoking a missing property on string (Error)", code: "=(s:str, \"hello\"); s.abs", expectedError: "Property 'abs' does not exist on type 'string'" },
    { name: "Invoking a missing property on number (Error)", code: "=(n:num, 10); n.upper", expectedError: "Property 'upper' does not exist on type 'number'" },
@@ -287,7 +286,58 @@ const regression_tests = [
 
    // --- SPECIAL SYSTEM RULES & EASTER EGGS ---
    { name: "Print internal custom Easter Egg trigger constraint (Rule 67)", code: "print(67)", expected: "SIX SEVEN!!!! SIX SEVEN!!! SIX SEVEN!!" },
-   { name: "Print list containing the custom Easter Egg value", code: "print(list(1, 67, 2))", expected: "(1 SIX SEVEN!!!! SIX SEVEN!!! SIX SEVEN!! 2)" }
+   { name: "Print list containing the custom Easter Egg value", code: "print(list(1, 67, 2))", expected: "(1 SIX SEVEN!!!! SIX SEVEN!!! SIX SEVEN!! 2)" },
+   
+   // ==========================================
+   // 9. PARSING & TYPE CONVERSIONS
+   // ==========================================
+
+   // --- NUM (String -> Number) ---
+   { name: "Parse valid integer string to number", code: "=(n:str, \"5\"); num(n)", expected: 5 },
+   { name: "Parse valid negative string to number", code: "num(\"-42\")", expected: -42 },
+   { name: "Parse valid float string to number", code: "num(\"3.1415\")", expected: 3.1415 },
+   { name: "Redundant num call on a number returns number", code: "=(n:num, 99); num(n)", expected: 99 },
+   
+   // --- NUM ERRORS (Negative tests) ---
+   { name: "Parse num fails on invalid text (ValueError)", code: "num(\"hello\")", expectedError: "Value error: cannot parse \"hello\" into a valid number" },
+   { name: "Parse num fails on empty string (ValueError)", code: "num(\"\")", expectedError: "Value error: cannot parse \"\" into a valid number" },
+   { name: "Parse num fails on list type (TypeError)", code: "=(n:list, list(1, 2, 3)); num(n)", expectedError: "Type mismatch: cannot convert type 'list' to 'number'" },
+   { name: "Parse num fails on function type (TypeError)", code: "=(n, func(x, +(x, 10))); num(n)", expectedError: "Type mismatch: cannot convert type 'function' to 'number'" },
+   { name: "Parse num fails on boolean type (TypeError)", code: "num(true)", expectedError: "Type mismatch: cannot convert type 'boolean' to 'number'" },
+   { name: "Function num with more than 1 argument (Error)", code: "num(\"5\", \"1\")", expectedError: "Function 'num' requires exactly 1 argument" },
+   { name: "Function num with 0 arguments (Error)", code: "num()", expectedError: "Function 'num' requires exactly 1 argument" },
+
+   // --- STR (Any Primitive -> String) ---
+   { name: "Parse integer number to string", code: "=(n:num, 5); str(n)", expected: "5" },
+   { name: "Parse float number to string", code: "str(3.14)", expected: "3.14" },
+   { name: "Parse negative number to string", code: "str(-99)", expected: "-99" },
+   { name: "Parse boolean true to string", code: "str(true)", expected: "true" },
+   { name: "Parse boolean false to string", code: "str(false)", expected: "false" },
+   { name: "Redundant str call on a string returns string", code: "str(\"hello\")", expected: "hello" },
+
+   // --- STR ERRORS (Negative tests) ---
+   { name: "Parse str fails on list type (TypeError)", code: "str(list(1, 2))", expectedError: "Type mismatch: cannot convert type 'list' to 'string'" },
+   { name: "Parse str fails on function type (TypeError)", code: "=(f, func(x, x)); str(f)", expectedError: "Type mismatch: cannot convert type 'function' to 'string'" },
+   { name: "Function str with more than 1 argument (Error)", code: "str(1, 2)", expectedError: "Function 'str' requires exactly 1 argument" },
+   { name: "Function str with 0 arguments (Error)", code: "str()", expectedError: "Function 'str' requires exactly 1 argument" },
+
+   // --- EXPLICIT bool() CONVERSION ---
+   { name: "Convert non-zero number to bool", code: "bool(42)", expected: true },
+   { name: "Convert zero to bool", code: "bool(0)", expected: false },
+   { name: "Convert non-empty string to bool", code: "bool(\"hello\")", expected: true },
+   { name: "Convert empty string to bool", code: "bool(\"\")", expected: false },
+   { name: "Convert non-empty list to bool", code: "bool(list(1, 2))", expected: true },
+   { name: "Convert empty list to bool", code: "bool(list())", expected: false },
+   { name: "Convert function to bool", code: "=(f, func(x, x)); bool(f)", expected: true },
+   { name: "Function bool with more than 1 argument (Error)", code: "bool(1, 2)", expectedError: "Function 'bool' requires exactly 1 argument" },
+
+   // --- IMPLICIT TRUTHINESS IN CONTROL FLOW (if / while) ---
+   { name: "Implicit true from string in IF", code: "=(x:str, \"hello\"); if(x, 10, 20)", expected: 10 },
+   { name: "Implicit false from empty string in IF", code: "=(x:str, \"\"); if(x, 10, 20)", expected: 20 },
+   { name: "Implicit false from zero in IF", code: "=(x:num, 0); if(x, 10, 20)", expected: 20 },
+   { name: "Implicit false from empty list in IF", code: "=(l:list, list()); if(l, 10, 20)", expected: 20 },
+   { name: "Implicit true from populated list in IF", code: "=(l:list, list(1)); if(l, 10, 20)", expected: 10 },
+   { name: "WHILE loop stops on implicit zero falsiness", code: "=(x:num, 3); while(x, =(x, -(x, 1))); x", expected: 0 },
 ];
    
 function testing(tests) {
