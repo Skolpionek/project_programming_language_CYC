@@ -68,7 +68,8 @@ const regression_tests = [
    // ==========================================
    // 2. LOGIC AND COMPARISONS
    // ==========================================
-// --- CHAINED COMPARISONS ---
+
+   // --- CHAINED COMPARISONS ---
    { name: "Chained less than (True)", code: "<(1, 5, 10, 20)", expected: true },
    { name: "Chained less than (False)", code: "<(1, 5, 3, 20)", expected: false },
    { name: "Chained greater than (True)", code: ">(100, 50, 0, -10)", expected: true },
@@ -119,6 +120,8 @@ const regression_tests = [
    // ==========================================
    // 3. VARIABLES, TYPING AND SCOPE
    // ==========================================
+
+   // --- BASIC DEKLARATIONS ---
    { name: "Variable declaration (num)", code: "=(x:num, 10); x", expected: 10 },
    { name: "Variable update", code: "=(y:num, 5); =(y, 15); y", expected: 15 },
    { name: "Arithmetic shortcuts", code: "=(z:num, 1); ++(z); z", expected: 2 },
@@ -127,6 +130,32 @@ const regression_tests = [
    { name: "Variable shadowing in functions", code: "=(x:num, 10); =(f, func(x, +(x, 5))); f(20)", expected: 25 },
    { name: "Nested DO block and Scope", code: "=(x:num, 1); do(=(x, 2), =(y:num, 3)); x", expected: 2 },
    { name: "FOR loop scope isolation", code: "=(i:num, 99); for(=(i:num, 0); <(i, 2); ++(i); 1); i", expected: 99 },
+
+   // --- Empty Declarations ---
+   { name: "Single empty number declaration", code: "=(x:num); x", expected: 0 },
+   { name: "Single empty string declaration", code: "=(s:str); s", expected: "" },
+   { name: "Single empty boolean declaration", code: "=(b:bool); b", expected: false },
+   { name: "Single empty list declaration (Check length)", code: "=(l:list); l.len", expected: 0 },
+   
+   // --- Multiple Variable Assignments ---
+   { name: "Multiple sequential variable assignments", code: "=(a, 10, b, 20, c, 5); +(a, b, c)", expected: 35 },
+   { name: "Multiple assignments with strict typing", code: "=(a:num, 100, s:str, \"test\"); +(a, num(s.len))", expected: 104 },
+   { name: "Multiple assignments returns the first evaluated value", code: "=(x, 42, y, 99)", expected: 42 },
+
+   // --- Declaration Errors (Negative tests) ---
+   { name: "Multiple assignments missing a pair value (Error)", code: "=(a, 10, b)", expectedError: "Invalid multiple assignment. Arguments must be provided in pairs." },
+   { name: "Assignment with invalid syntax on left side (Error)", code: "=(10, 20)", expectedError: "Invalid assignment. Expected: =(name, value, ...) or =(name:type)" },
+   { name: "Multiple assignment with missing word on later pair (Error)", code: "=(a, 10, 20, 30)", expectedError: "Expected variable name at position 2, but got a value" },
+
+   // --- Multiple Variable Updates (SET) ---
+   { name: "Multiple sequential variable updates", code: "=(a:num, 1, b:num, 2); =(a, 10, b, 20); +(a, b)", expected: 30 },
+   { name: "Multiple updates returns the first evaluated value", code: "=(x, 0, y, 0); =(x, 42, y, 99)", expected: 42 },
+   { name: "Multiple updates respect different scope chains in one call", code: "=(outer, 10); do(=(inner, 5), =(outer, 99, inner, 1)); outer", expected: 99 },
+
+   // --- Update Errors (Negative tests) ---
+   { name: "Multiple updates missing a pair value (Error)", code: "=(x, 1); =(x, 10, y)", expectedError: "Invalid multiple assignment. Arguments must be provided in pairs." },
+   { name: "Update with invalid syntax on left side (Error)", code: "=(x, 1); =(10, 20)", expectedError: "Invalid assignment. Expected: =(name, value, ...) or =(name:type)" },
+   { name: "Update attempting to redefine type (Error)", code: "=(x:num, 1); =(x:str, \"test\")", expectedError: "Cannot specify a type when updating a variable! Remove the type annotation from 'x'." },
 
    // ==========================================
    // 4. CONTROL FLOW
@@ -350,6 +379,7 @@ const regression_tests = [
    // ==========================================
    // 10. ADVANCED MATHEMATICS
    // ==========================================
+
    // --- Positive Math Tests ---
    { name: "Math SIN of 0", code: "sin(0)", expected: 0 },
    { name: "Math COS of 0", code: "cos(0)", expected: 1 },

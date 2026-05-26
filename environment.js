@@ -7,11 +7,15 @@ import fs from 'fs';
 import { TypeMismatchError, DivisionByZeroError, SyntaxError, ValueError} from './main.js';
 import readlineSync from 'readline-sync';
 import { arch } from 'os';
+
+export const FUNCTIONS = Object.create(null);
+export const SPECIAL_FORMS = Object.create(null);
+export const VARIABLES = Object.create(null);
+
 //----------------------
 // FUNCTIONS
 //----------------------
 
-export const FUNCTIONS = Object.create(null);
 //INPUT OUTPUT
 FUNCTIONS.print = (args) => {
    const formatOutput = (arg) => {
@@ -19,7 +23,7 @@ FUNCTIONS.print = (args) => {
          let inner = arg.value.map(v => formatOutput(v)).join(" ");
          return `(${inner})`;
       }
-      if (typeof arg === "function") {
+      if (typeof arg === "function" || arg.type === "function") {
          return "<function>";
       }
       return ((arg == 67) ? "SIX SEVEN!!!! SIX SEVEN!!! SIX SEVEN!!" : arg);
@@ -231,7 +235,7 @@ comparisonOperators.forEach(operator => {
 // SPECIAL FORMS
 //----------------------
 
-export const SPECIAL_FORMS = Object.create(null);
+
 SPECIAL_FORMS.or = (args, env, evaluate) => {
    for (let arg of args) {
       let value = evaluate(arg, env);
@@ -268,78 +272,140 @@ SPECIAL_FORMS.do = (args, env, evaluate) => {
    return value;
 }
 
+function getEmptyValue(arg) {
+   switch (arg.valueType) {
+      case "function": return () => { throw new Error("Unimplemented function placeholder"); }; 
+      case "list": return { value: [], type: "list", len: 0};
+      case "boolean": return false;
+      case "string": return "";
+      case "number": return 0;
+      default: return null; 
+   }
+}
+
 SPECIAL_FORMS.define = (args, env, evaluate) => {
-   if (args.length !== 2 || args[0].type !== "word") {
-      throw new SyntaxError("Invalid assignment. Expected: =(name, value)");
+   if (args.length === 0 || args[0].type !== "word") {
+      throw new SyntaxError("Invalid assignment. Expected: =(name, value, ...) or =(name:type)");
    }
-   let value = evaluate(args[1], env);
-   let inferredType = args[0].valueType;
    
-   if (!inferredType) {
-      if (typeof value === "object") {
-         inferredType = value.type;
-      } else {
-         inferredType = typeof value;
-      }
-   } 
-   
-   if (args[0].valueType && args[0].valueType !== "anything") {
-      if (typeof value !== "object" && args[0].valueType !== typeof value) {
-         throw new TypeMismatchError(`Type mismatch for variable '${args[0].name}'. Expected '${args[0].valueType}', got '${typeof value}'`);
-      }
+   if (args.length === 1) {
+      let currentName = args[0];
+      let value = getEmptyValue(currentName);
+      let inferredType = currentName.valueType || "anything";
+      
+      env[currentName.name] = value;
+      env[`__type_${currentName.name}`] = inferredType;
+      
+      delete currentName.valueType;
+      return value; 
    }
-   delete args[0].valueType;
-  
+   if (args.length % 2 !== 0) {
+      throw new SyntaxError("Invalid multiple assignment. Arguments must be provided in pairs.");
+   }
+
+   let firstValue = undefined;
+
+   for (let i = 0; i < args.length; i += 2) {
+      let currentName = args[i];
+      let currentValue = args[i + 1];
+
+      if (currentName.type !== "word") {
+          throw new SyntaxError(`Expected variable name at position ${i}, but got a value.`);
+      }
+
+      let value = evaluate(currentValue, env);
+      let inferredType = currentName.valueType;
+
+      if (!inferredType) {
+         inferredType = (typeof value === "object" && value !== null) ? value.type : typeof value;
+      } 
+      
+      if (currentName.valueType && currentName.valueType !== "anything") {
+         let valueTypeStr = (typeof value === "object" && value !== null) ? value.type : typeof value;
+         if (currentName.valueType !== valueTypeStr) {
+            throw new TypeMismatchError(`Type mismatch for variable '${currentName.name}'. Expected '${currentName.valueType}', got '${valueTypeStr}'`);
+         }
+      }
+      
+      delete currentName.valueType;
+      
+      env[currentName.name] = value;
+      env[`__type_${currentName.name}`] = inferredType;
+      
+      if (i === 0) firstValue = value;
+   }
    
-   env[args[0].name] = value;
-   env[`__type_${args[0].name}`] = inferredType;
-   
-   return value;
+   return firstValue;
 };
 
 SPECIAL_FORMS.set = (args, env, evaluate) => {
-   if (args.length !== 2 || args[0].type !== "word") {
-      throw new SyntaxError("Invalid assignment. Expected: =(name, value)");
-   }
-   if (args[0].valueType) {
-      throw new SyntaxError(`Cannot specify a type when updating a variable! Remove the type annotation from '${args[0].name}'.`);
-   }
-   
-   let varName = args[0].name;
-   let targetEnv = env;
-   
-   while (targetEnv && !Object.prototype.hasOwnProperty.call(targetEnv, varName)) {
-      targetEnv = Object.getPrototypeOf(targetEnv);
+   if (args.length === 0 || args.length % 2 !== 0) {
+      throw new SyntaxError("Invalid multiple assignment. Arguments must be provided in pairs.");
    }
 
-   if (!targetEnv) throw new ReferenceError(`Undefined variable: '${varName}'`);
+   let firstValue = undefined;
+   for (let i = 0; i < args.length; i += 2) {
+      let currentName = args[i];
+      let currentValue = args[i + 1];
 
-   let value = evaluate(args[1], env);
-   let oldValue = targetEnv[varName];
-   let declaredType = targetEnv[`__type_${varName}`];
-
-   if (declaredType !== "anything") {
-      if (typeof value !== "object" && declaredType !== typeof value) {
-         throw new TypeMismatchError(`Type mismatch for variable '${varName}' of type '${declaredType}' with value: ${value} of type '${typeof value}'`);
-      } else if (typeof value === "object" && oldValue.type !== value.type) {
-         throw new TypeMismatchError(`Type mismatch for object '${varName}'`);
+      if (currentName.type !== "word") {
+         throw new SyntaxError(`Expected variable name at position ${i}, but got a value.`);
       }
+      
+      if (currentName.valueType) {
+         throw new SyntaxError(`Cannot specify a type when updating a variable! Remove the type annotation from '${currentName.name}'.`);
+      }
+
+      let varName = currentName.name;
+      let targetEnv = env;
+      
+      while (targetEnv && !Object.prototype.hasOwnProperty.call(targetEnv, varName)) {
+         targetEnv = Object.getPrototypeOf(targetEnv);
+      }
+
+      if (!targetEnv) throw new ReferenceError(`Undefined variable: '${varName}'`);
+
+      let value = evaluate(currentValue, env);
+      let oldValue = targetEnv[varName];
+      let declaredType = targetEnv[`__type_${varName}`];
+
+      if (declaredType !== "anything") {
+         if (typeof value !== "object" && declaredType !== typeof value) {
+            throw new TypeMismatchError(`Type mismatch for variable '${varName}' of type '${declaredType}' with value: ${value} of type '${typeof value}'`);
+         } else if (typeof value === "object" && oldValue.type !== value.type) {
+            throw new TypeMismatchError(`Type mismatch for object '${varName}'`);
+         }
+      }
+      targetEnv[varName] = value;
+      if (i === 0) firstValue = value;
    }
    
-   targetEnv[varName] = value;
-   return value;
+   return firstValue;
 };
 
 SPECIAL_FORMS["="] = (args, env, evaluate) => {
-   
+   let varName = args[0].name;
+
    if (args[0].valueType) {
-      console.log(args[0])
-      return SPECIAL_FORMS.define(args, env, evaluate);
-   }
-   if (args[0].name in env) {
-      return SPECIAL_FORMS.set(args, env, evaluate);
+      //CASE 1: User provided a type (e.g. x:num)
+      if (Object.prototype.hasOwnProperty.call(env, varName)) {
+         // The variable already exists in THIS SPECIFIC scope.
+         // Refer you to set, which will throw your correct exception
+         return SPECIAL_FORMS.set(args, env, evaluate);
+      } else {
+         // The variable is not in this scope (or is somewhere high in the parent).
+         // create a new local variable 
+         return SPECIAL_FORMS.define(args, env, evaluate);
+      }
    } else {
-      return SPECIAL_FORMS.define(args, env, evaluate);
+      // CASE 2: No type (e.g. just x)
+      if (varName in env) {
+         // Variable exists anywhere in scope tree -> Update
+         return SPECIAL_FORMS.set(args, env, evaluate);
+      } else {
+         // Variable doesn't exist at all -> Implicit definition
+         return SPECIAL_FORMS.define(args, env, evaluate);
+      }
    }
 };
 
@@ -461,8 +527,6 @@ SPECIAL_FORMS.import = (args, env, evaluate, parse) => {
 //----------------------
 // BUILT-IN VARIABLES
 //----------------------
-
-export const VARIABLES = Object.create(null);
 
 VARIABLES.true = true;
 VARIABLES.false = false;

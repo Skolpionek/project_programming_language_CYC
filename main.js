@@ -70,8 +70,8 @@ function parseExpression(program) {
             case "bool": expr.valueType = "boolean"; break;
             case "str": expr.valueType = "string"; break;
             case "num": expr.valueType = "number"; break;
-            case "list": expr.valueType = "list"; break;
             case "func": expr.valueType = "function"; break;
+            case "list": expr.valueType = "list"; break;
             case "any": expr.valueType = "anything"; break;
             default:
                throw new SyntaxError(`Unknown type annotation: '${match[2]}'`);
